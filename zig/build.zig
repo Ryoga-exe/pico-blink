@@ -1,26 +1,20 @@
 const std = @import("std");
+const microzig = @import("microzig");
+
+const MicroBuild = microzig.MicroBuild(.{
+    .rp2xxx = true,
+});
 
 pub fn build(b: *std.Build) void {
-    const target = b.standardTargetOptions(.{});
-    const optimize = b.standardOptimizeOption(.{});
+    const mz_dep = b.dependency("microzig", .{});
+    const mb = MicroBuild.init(b, mz_dep) orelse return;
 
-    const exe = b.addExecutable(.{
+    const firmware = mb.add_firmware(.{
         .name = "pico-blink",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/main.zig"),
-            .target = target,
-            .optimize = optimize,
-        }),
+        .target = mb.ports.rp2xxx.boards.raspberrypi.pico,
+        .optimize = .ReleaseSmall,
+        .root_source_file = b.path("src/main.zig"),
     });
 
-    b.installArtifact(exe);
-
-    const run_step = b.step("run", "Run the app");
-
-    const run_cmd = b.addRunArtifact(exe);
-    run_step.dependOn(&run_cmd.step);
-
-    run_cmd.step.dependOn(b.getInstallStep());
-
-    run_cmd.addPassthruArgs();
+    mb.install_firmware(firmware, .{});
 }
