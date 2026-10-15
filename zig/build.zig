@@ -17,4 +17,11 @@ pub fn build(b: *std.Build) void {
     });
 
     mb.install_firmware(firmware, .{});
+
+    const flash = b.addSystemCommand(&.{ "picotool", "load", "-x" });
+    flash.addFileArg(firmware.get_emitted_bin(null));
+    flash.has_side_effects = true;
+
+    const run_step = b.step("run", "Flash and run on the Pico");
+    run_step.dependOn(&flash.step);
 }
